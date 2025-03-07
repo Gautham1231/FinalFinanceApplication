@@ -15,6 +15,8 @@ import { parseStringify } from "../utils";
 // import { getTransactionsByBankId } from "./transaction.actions";
 import { getBanks, getBank } from "./user.actions";
 
+//test commit
+
 // Get multiple bank accounts
 export const getAccounts = async ({ userId }: getAccountsProps) => {
   try {
@@ -29,7 +31,7 @@ export const getAccounts = async ({ userId }: getAccountsProps) => {
         });
 
         console.log("Accounts Response:", accountsResponse.data.accounts);
-        
+
         const accountData = accountsResponse.data.accounts[0];
         // get institution info from plaid
         const institution = await getInstitution({
