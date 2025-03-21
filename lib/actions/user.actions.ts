@@ -8,7 +8,7 @@ import { parse } from "path";
 import { CountryCode, ItemWithConsentFieldsUpdateTypeEnum, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
 import { plaidClient } from "@/lib/plaid";
 import { revalidatePath } from "next/cache";
-import { addFundingSource, createDwollaCustomer } from "./dwoll.actions";
+import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 
 const {
     APPWRITE_DATABASE_ID: DATABASE_ID,
@@ -145,7 +145,7 @@ export const createLinkToken = async (user: User) => {
 
             },
             client_name: `${user.firstName} ${user.lastName}`,
-            products: ['auth'] as Products[],
+            products: ['auth','transactions'] as Products[],
             language: 'en',
             country_codes: ['US'] as CountryCode[],
         }
@@ -167,8 +167,18 @@ export const createBankAccount = async ({
     shareableId,
   }: createBankAccountProps) => {
     try {
+
+    console.log("User ID:", userId);
+    console.log("Bank ID:", bankId);
+    console.log("Account ID:", accountId);
+    console.log("Access Token:", accessToken);
+    console.log("Funding Source URL:", fundingSourceUrl);
+    console.log("Shareable ID:", shareableId);
+
+    console.log("Database ID:", DATABASE_ID);
+    console.log("Bank Collection ID:", BANK_COLLECTION_ID);
+
       const { database } = await createAdminClient();
-  
       const bankAccount = await database.createDocument(
         DATABASE_ID!,
         BANK_COLLECTION_ID!,
@@ -198,7 +208,8 @@ export const createBankAccount = async ({
       const response = await plaidClient.itemPublicTokenExchange({
         public_token: publicToken,
       });
-  
+      console.log("Public token exchange successful:", response);
+
       const accessToken = response.data.access_token;
       const itemId = response.data.item_id;
       
@@ -206,6 +217,8 @@ export const createBankAccount = async ({
       const accountsResponse = await plaidClient.accountsGet({
         access_token: accessToken,
       });
+
+      console.log("Accounts response received:", accountsResponse);
   
       const accountData = accountsResponse.data.accounts[0];
   
@@ -215,7 +228,7 @@ export const createBankAccount = async ({
         account_id: accountData.account_id,
         processor: "dwolla" as ProcessorTokenCreateRequestProcessorEnum,
       };
-  
+      
       const processorTokenResponse = await plaidClient.processorTokenCreate(request);
       const processorToken = processorTokenResponse.data.processor_token;
   
@@ -230,6 +243,8 @@ export const createBankAccount = async ({
       if (!fundingSourceUrl) throw Error;
   
       // Create a bank account using the user ID, item ID, account ID, access token, funding source URL, and shareableId ID
+      console.log("Debugging user.actions.ts:240 - Function called");
+
       await createBankAccount({
         userId: user.$id,
         bankId: itemId,
@@ -279,8 +294,28 @@ export const createBankAccount = async ({
           Query.equal('$id', [documentId])
         ]
       ) 
+      console.log("Bank:", bank);
+      
       return parseStringify(bank.documents[0]);
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps) => {
+    try {
+      const { database } = await createAdminClient();
+  
+      const bank = await database.listDocuments(
+        DATABASE_ID!,
+        BANK_COLLECTION_ID!,
+        [Query.equal('accountId', [accountId])]
+      )
+  
+      if(bank.total !== 1) return null;
+  
+      return parseStringify(bank.documents[0]);
+    } catch (error) {
+      console.log(error)
     }
   }

@@ -12,7 +12,7 @@ import {
 import { plaidClient } from "../plaid";
 import { parseStringify } from "../utils";
 
-// import { getTransactionsByBankId } from "./transaction.actions";
+import { getTransactionsByBankId } from "./transaction.actions";
 import { getBanks, getBank } from "./user.actions";
 
 //test commit
@@ -49,7 +49,7 @@ export const getAccounts = async ({ userId }: getAccountsProps) => {
           type: accountData.type as string,
           subtype: accountData.subtype! as string,
           appwriteItemId: bank.$id,
-          sharaebleId: bank.sharableId,
+          shareableId: bank.shareableId,
         };
 
         return account;
@@ -80,23 +80,21 @@ export const getAccount = async ({ appwriteItemId }: getAccountProps) => {
     const accountData = accountsResponse.data.accounts[0];
 
     // get transfer transactions from appwrite
-   // const transferTransactionsData = await getTransactionsByBankId({
-     // bankId: bank.$id,
-  //  });
+    const transferTransactionsData = await getTransactionsByBankId({
+      bankId: bank.$id,
+    });
 
-  //  const transferTransactions = transferTransactionsData.documents.map(
-    //  (transferData: Transaction) => ({
-    //    id: transferData.$id,
-    //    name: transferData.name!,
-    //    amount: transferData.amount!,
-   //     date: transferData.$createdAt,
-    //    paymentChannel: transferData.channel,
-    //    category: transferData.category,
-    //    type: transferData.senderBankId === bank.$id ? "debit" : "credit",
-   //   })
- //   );
-
-    // get institution info from plaid
+    const transferTransactions = transferTransactionsData.documents.map(
+      (transferData: Transaction) => ({
+        id: transferData.$id,
+        name: transferData.name!,
+        amount: transferData.amount!,
+        date: transferData.$createdAt,
+        paymentChannel: transferData.channel,
+        category: transferData.category,
+        type: transferData.senderBankId === bank.$id ? "debit" : "credit",
+      })
+    );
     const institution = await getInstitution({
       institutionId: accountsResponse.data.item.institution_id!,
     });
